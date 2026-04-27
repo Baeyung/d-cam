@@ -1,3 +1,4 @@
+#include "IPCServer.h"
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -54,6 +55,16 @@ void handle_client(int client_fd) {
 }
 
 int main() {
+    IPCServer ipc_server;
+    if (!ipc_server.start()) {
+        std::cerr << "[Desktop] Failed to start IPC server." << std::endl;
+        return 1;
+    }
+
+    std::thread([&ipc_server]() {
+        while (true) ipc_server.accept_client();
+    }).detach();
+
     std::cout << "[Desktop] Setting up ADB reverse tunnel..." << std::endl;
     // For production, we'd use fork/exec and check ADB state, but system() works for boilerplate
     int sys_ret = std::system(("adb reverse tcp:" + std::to_string(PHONE_PORT) + " tcp:" + std::to_string(DESKTOP_PORT)).c_str());
